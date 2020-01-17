@@ -23,6 +23,12 @@ library(kableExtra)
 
 ```
 
+```{r processing, include=FALSE}
+fit_table = read.table("output_170120.csv", sep=",", header=T)
+print(fit_table)
+
+```
+
 Page 1
 =====================================  
 
