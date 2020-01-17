@@ -1,0 +1,97 @@
+---
+title: "flexdashboard test"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+    theme: yeti
+---
+
+<!-- “default”, “cerulean”, “journal”, “flatly”, “darkly”, “readable”, “spacelab”, “united”, “cosmo”, “lumen”, “paper”, “sandstone”, “simplex”, “yeti” -->
+
+fit_tools: Dashboard for Garmin activities
+
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(ggplot2)
+library(plotly)
+library(tidyr)
+require(scales)
+library(knitr)
+library(kableExtra)
+
+```
+
+Page 1
+=====================================  
+
+Column {data-width=650}
+-----------------------------------------------------------------------
+
+### Chart 1
+
+```{r}
+
+plot_mapping <- function(mapping_summary) {
+
+  summary_df = read.table(mapping_summary, sep="\t", header=F)
+  colnames(summary_df) <- c("Sample", "Type", "Paired_Reads")
+
+  summary_df$Type <- factor(summary_df$Type, levels = c("rRNA_LSU", "rRNA_SSU", "mRNA_reads"))
+
+  cols <- c("mRNA_reads" = "#7CAE00", "rRNA_LSU" = "#C77CFF", "rRNA_SSU" = "#00BFC4")
+
+  p <- ggplot(summary_df, aes(x=Sample, y=Paired_Reads, fill=Type)) +
+    geom_bar(stat='identity') +
+    scale_y_continuous(labels = comma) +
+    scale_fill_manual(values=cols) +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle=45, hjust=1)) +
+    ylab("Read pairs") +
+    xlab("Sample")
+
+  return(p)
+
+}
+
+mapping_summary <- "/datasets/work/AAHL_PDNGS_WORK/test_data/freshwater_prawn/logs/rRNA_mapping_summary.tsv"
+
+p <- plot_mapping(mapping_summary)
+
+ggplotly(p)
+
+```
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+mapping_summary <- "/datasets/work/AAHL_PDNGS_WORK/test_data/freshwater_prawn/logs/rRNA_mapping_summary.tsv"
+map_tab <- read.table(mapping_summary, sep="\t", header=F)
+colnames(map_tab) <- c("Sample", "Type", "Reads")
+
+map_tab %>%
+  kable() %>%
+  kable_styling(fixed_thead=T, bootstrap_options = c("striped", "hover", "condensed", "responsive"))
+```
+
+
+### Chart C
+
+```{r}
+  plot(5, 1)
+```
+
+
+Page 2
+=====================================  
+
+### Chart 1
+
+```{r}
+plot(5, 1)
+```
