@@ -66,6 +66,9 @@ for fls in tqdm(args.fit_files):
     for record in fit_fl.get_messages("session"):
         # get a dictionary of data in this record
         values = record.get_values()
+        #print(values)
+        #{'timestamp': datetime.datetime(2018, 2, 7, 20, 32, 26), 'start_time': datetime.datetime(2018, 2, 7, 20, 18, 31), 'start_position_lat': -456730065, 'start_position_long': 1723890224, 'total_elapsed_time': 423.883, 'total_timer_time': 423.883, 'total_distance': 538.46, 'total_cycles': 99, 'unknown_78': None, 'message_index': 0, 'total_calories': 24, 'enhanced_avg_speed': 1.27, 'avg_speed': 1270, 'first_lap_index': 0, 'num_laps': 1, 'unknown_33': None, 'num_active_lengths': None, 'event': 'lap', 'event_type': 'stop', 'sport': 'generic', 'sub_sport': 'generic', 'avg_heart_rate': 77, 'max_heart_rate': 88, 'avg_cadence': 51, 'max_cadence': 59, 'trigger': 'activity_end'}
+        #The 'enhanced' fields were added to allow expressing speeds/altitudes too large for the existing 16bit fields. They are likely of limited interest to (most) human powered activities.
         # extract specific things from this file to write out
         to_write.append([
             values['sport'],
@@ -77,11 +80,13 @@ for fls in tqdm(args.fit_files):
             values['avg_speed'],
             values['avg_heart_rate'],
             values['max_heart_rate'],
+            values['total_calories'],
             ])
 
 # now write the list of lists to a csv file
 with open(args.output, "w") as f:
     writer = csv.writer(f)
     writer.writerow(['sport', 'timestamp', 'local_date', 'total_elapsed_time',
-        'total_timer_time', 'total_distance', 'avg_speed', 'avg_heart_rate', 'max_heart_rate'])
+        'total_timer_time', 'total_distance', 'avg_speed', 'avg_heart_rate',
+        'max_heart_rate', 'calories'])
     writer.writerows(to_write)
