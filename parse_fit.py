@@ -12,9 +12,6 @@ import datetime
 from tqdm import tqdm # gives a progress bar
 import csv
 
-#fit_fl = FitFile(sys.argv[1])
-fit_fls = sys.argv[1:]
-
 # use argparse to grab command line arguments
 
 parser = argparse.ArgumentParser("parse and convert fit files into combined csv")
