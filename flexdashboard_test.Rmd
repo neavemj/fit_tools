@@ -32,20 +32,18 @@ fit_table$local_date <- as.POSIXct(fit_table$local_date)
 # the date contains lots of gaps when I didn't do anything
 # want to fill these so it will plot better
 # first create a timeseries encompassing the entiure datetimes
-ts = seq.POSIXt(min(as.POSIXct(fit_table$local_date, '%Y')), max(as.POSIXct(fit_table$local_date, '%Y')), by='day')
+#ts = seq.POSIXt(min(as.POSIXct(fit_table$local_date, '%Y')), max(as.POSIXct(fit_table$local_date, '%Y')), by='day')
 
-df <- data.frame(local_date=ts)
+#df <- data.frame(local_date=ts)
 
 # now join and force the dates to align
-fit_table <- full_join(df, fit_table)
-
-tail(fit_table)
+#fit_table <- full_join(df, fit_table)
 
 # fill NAs with 0s
 
-fit_table <- fit_table %>% 
-  group_by(local_date) %>% 
-  mutate_each(funs(ifelse(is.na(.),0,.)))
+#fit_table <- fit_table %>% 
+#  group_by(local_date) %>% 
+#  mutate_each(funs(ifelse(is.na(.),0,.)))
 
 ```
 
@@ -63,23 +61,21 @@ plot_mapping <- function(fit_table) {
 
   cols <- c("mRNA_reads" = "#7CAE00", "rRNA_LSU" = "#C77CFF", "rRNA_SSU" = "#00BFC4")
 
-  p <- ggplot(fit_table, aes(x=date, y=total_distance)) +
+  p <- ggplot(fit_table, aes(x=local_date, y=total_distance)) +
     geom_point() +
-    ylab("Distance") +
-    xlab("Date") 
-    
-    #scale_x_date(limits = as.Date(c(min(fit_table$local_date), max(fit_table$local_date)))) +
-    
-    #facet_grid(. ~ year, scales='free_x')
+    ylab("Distance (m)") +
+    xlab("Date") +
+    scale_x_datetime(labels = date_format("%b-%Y")) +
+    scale_y_continuous(labels = comma) +
+    theme_bw()
 
   return(p)
 
 }
 
-fit_table$year <- format(fit_table$local_date, '%Y')
-fit_table$date <- as.Date(fit_table$local_date)
+run_tab <- subset(fit_table, sport=="running")
 
-p <- plot_mapping(fit_table)
+p <- plot_mapping(run_tab)
 p
 
 
