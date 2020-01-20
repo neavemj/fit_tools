@@ -26,8 +26,11 @@ library(kableExtra)
 
 ```{r processing, include=FALSE}
 
-fit_table = read.table("c:/Users/nea040/Desktop/c935099c-913d-4a78-8a39-4360510e437c/matt_summarised_data/output_170120.csv", sep=",", header=T)
-fit_table$local_date <- as.POSIXct(fit_table$local_date)
+#fit_table = read.table("c:/Users/nea040/Desktop/c935099c-913d-4a78-8a39-4360510e437c/matt_summarised_data/output_170120.csv", sep=",", header=T)
+getwd()
+fit_table = read.table("././example_files/Activities.csv", sep=",", header=T)
+
+fit_table$Date <- as.POSIXct(fit_table$Date)
 
 # the date contains lots of gaps when I didn't do anything
 # want to fill these so it will plot better
@@ -53,33 +56,37 @@ Page 1
 Column {data-width=650}
 -----------------------------------------------------------------------
 
-### Chart 1
+### All activities
 
-```{r}
+```{r dpi=300}
 
 plot_mapping <- function(fit_table) {
 
   cols <- c("mRNA_reads" = "#7CAE00", "rRNA_LSU" = "#C77CFF", "rRNA_SSU" = "#00BFC4")
 
-  p <- ggplot(fit_table, aes(x=local_date, y=total_distance)) +
+  p <- ggplot(fit_table, aes(x=Date, y=Distance, color=Activity.Type)) +
     geom_point() +
     ylab("Distance (m)") +
     xlab("Date") +
     scale_x_datetime(labels = date_format("%b-%Y")) +
     scale_y_continuous(labels = comma) +
+    scale_color_brewer(type="qual", palette=2) +
+    #facet_wrap(~Activity.Type, ncol=1) +
     theme_bw()
 
   return(p)
 
 }
 
-run_tab <- subset(fit_table, sport=="running")
+act_tab <- subset(fit_table, Activity.Type!="Other")
 
-p <- plot_mapping(run_tab)
-p
+p <- plot_mapping(act_tab)
 
+ggplotly(p)
 
 ```
+
+### Chart B
 
 
 Column {data-width=350}
@@ -89,7 +96,7 @@ Column {data-width=350}
 
 ```{r}
 
-fit_table %>%
+fit_table %>%#
   kable() %>%
   kable_styling(fixed_thead=T, bootstrap_options = c("striped", "hover", "condensed", "responsive"))
 ```
