@@ -17,6 +17,7 @@ library(flexdashboard)
 library(ggplot2)
 library(plotly)
 library(tidyr)
+library(dplyr)
 require(scales)
 library(knitr)
 library(kableExtra)
@@ -24,8 +25,27 @@ library(kableExtra)
 ```
 
 ```{r processing, include=FALSE}
-fit_table = read.table("output_170120.csv", sep=",", header=T)
-print(fit_table)
+
+fit_table = read.table("c:/Users/nea040/Desktop/c935099c-913d-4a78-8a39-4360510e437c/matt_summarised_data/output_170120.csv", sep=",", header=T)
+fit_table$local_date <- as.POSIXct(fit_table$local_date)
+
+# the date contains lots of gaps when I didn't do anything
+# want to fill these so it will plot better
+# first create a timeseries encompassing the entiure datetimes
+ts = seq.POSIXt(min(as.POSIXct(fit_table$local_date, '%Y')), max(as.POSIXct(fit_table$local_date, '%Y')), by='day')
+
+df <- data.frame(local_date=ts)
+
+# now join and force the dates to align
+fit_table <- full_join(df, fit_table)
+
+tail(fit_table)
+
+# fill NAs with 0s
+
+fit_table <- fit_table %>% 
+  group_by(local_date) %>% 
+  mutate_each(funs(ifelse(is.na(.),0,.)))
 
 ```
 
@@ -39,33 +59,29 @@ Column {data-width=650}
 
 ```{r}
 
-plot_mapping <- function(mapping_summary) {
-
-  summary_df = read.table(mapping_summary, sep="\t", header=F)
-  colnames(summary_df) <- c("Sample", "Type", "Paired_Reads")
-
-  summary_df$Type <- factor(summary_df$Type, levels = c("rRNA_LSU", "rRNA_SSU", "mRNA_reads"))
+plot_mapping <- function(fit_table) {
 
   cols <- c("mRNA_reads" = "#7CAE00", "rRNA_LSU" = "#C77CFF", "rRNA_SSU" = "#00BFC4")
 
-  p <- ggplot(summary_df, aes(x=Sample, y=Paired_Reads, fill=Type)) +
-    geom_bar(stat='identity') +
-    scale_y_continuous(labels = comma) +
-    scale_fill_manual(values=cols) +
-    theme_bw() +
-    theme(axis.text.x = element_text(angle=45, hjust=1)) +
-    ylab("Read pairs") +
-    xlab("Sample")
+  p <- ggplot(fit_table, aes(x=date, y=total_distance)) +
+    geom_point() +
+    ylab("Distance") +
+    xlab("Date") 
+    
+    #scale_x_date(limits = as.Date(c(min(fit_table$local_date), max(fit_table$local_date)))) +
+    
+    #facet_grid(. ~ year, scales='free_x')
 
   return(p)
 
 }
 
-mapping_summary <- "/datasets/work/AAHL_PDNGS_WORK/test_data/freshwater_prawn/logs/rRNA_mapping_summary.tsv"
+fit_table$year <- format(fit_table$local_date, '%Y')
+fit_table$date <- as.Date(fit_table$local_date)
 
-p <- plot_mapping(mapping_summary)
+p <- plot_mapping(fit_table)
+p
 
-ggplotly(p)
 
 ```
 
@@ -76,11 +92,8 @@ Column {data-width=350}
 ### Chart B
 
 ```{r}
-mapping_summary <- "/datasets/work/AAHL_PDNGS_WORK/test_data/freshwater_prawn/logs/rRNA_mapping_summary.tsv"
-map_tab <- read.table(mapping_summary, sep="\t", header=F)
-colnames(map_tab) <- c("Sample", "Type", "Reads")
 
-map_tab %>%
+fit_table %>%
   kable() %>%
   kable_styling(fixed_thead=T, bootstrap_options = c("striped", "hover", "condensed", "responsive"))
 ```
