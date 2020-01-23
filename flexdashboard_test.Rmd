@@ -20,6 +20,7 @@ require(scales)
 library(knitr)
 library(kableExtra)
 library(RColorBrewer)
+#library(ggrepel) ## ggrepel is not implemented in plotly
 
 ```
 
@@ -27,30 +28,38 @@ library(RColorBrewer)
 
 #fit_table = read.table("c:/Users/nea040/Desktop/c935099c-913d-4a78-8a39-4360510e437c/matt_summarised_data/output_170120.csv", sep=",", header=T)
 
-fit_table = read.table("././example_files/Activities.csv", sep=",", header=T)
+fit_table = read.table("./example_files/str_activities.csv", sep=",", header=T)
 
-fit_table$Date <- as.POSIXct(fit_table$Date)
+fit_table$Date <- as.POSIXct(fit_table$Activity.Date, format="%d %b %Y, %H:%M:%S")
+
+fit_table <- fit_table %>%
+  arrange(Date)
+
 fit_table$Month <- format(fit_table$Date, "%m")
 fit_table$Day <- as.numeric(format(fit_table$Date, "%j"))
+fit_table$Day_Month_Year <- format(fit_table$Date, "%b-%d-%Y")
 fit_table$Year <- format(fit_table$Date, "%Y")
 
 today <- as.POSIXct(Sys.Date())
+today_Month <- format(today, "%m")
 today_Day_Month <- format(today, "%b %d")
 today_Day <- as.numeric(format(today, "%j"))
 
-run_table <- subset(fit_table, Activity.Type=="Running")
-bike_table <- subset(fit_table, Activity.Type=="Cycling")
+run_table <- subset(fit_table, Activity.Type=="Run")
+bike_table <- subset(fit_table, Activity.Type=="Ride")
 
 # set out consistent colors
 
-#display.brewer.pal(n = 3, name = 'Dark2')
-#brewer.pal(n = 3, name = 'Set2')
+#display.brewer.pal(n = 4, name = 'Dark2')
+#brewer.pal(n = 4, name = 'Set2')
 
-year_cols <- c("2018" = "#66C2A5", "2019" = "#FC8D62", "2020" = "#8DA0CB")
+year_cols <- c("2017" = "#E78AC3", "2018" = "#66C2A5", "2019" = "#FC8D62", "2020" = "#8DA0CB")
 
-#brewer.pal(n = 3, name = 'Dark2')
+#brewer.pal(n = 4, name = 'Dark2')
 
-activity_cols <- c("Running" = "#1B9E77", "Cycling" = "#D95F02", "Walking" = "#7570B3")
+unique(fit_table$Activity.Type)
+
+activity_cols <- c("Run" = "#1B9E77", "Ride" = "#D95F02", "Walk" = "#7570B3", "Workout" = "#E7298A")
 
 # the date contains lots of gaps when I didn't do anything
 # want to fill these so it will plot better
@@ -99,59 +108,97 @@ ggplotly(p)
 
 ```{r}
 
+# putting curly braces around the ggplot call
+# because this allows me to access df with .
+
 p <- run_table %>%
   filter(Day < today_Day) %>%
   group_by(Year) %>%
-  summarise(dist = sum(Distance)) %>%
+  summarise(dist = sum(Distance)) %>% {
   ggplot(., aes(x=Year, y=dist, color=Year)) +
     geom_point(size=2, alpha=0.7, shape=21, stroke=2) +
     geom_segment(aes(x=Year, xend=Year, y=0, yend=dist )) +
+    geom_text(aes(label=Year, x=Year, y=dist), nudge_y=10, nudge_x=0) +
+    scale_y_continuous(limits=c(0, max(.$dist) + 20)) +
     ylab("Distance (km)") +
     scale_color_manual(values = year_cols) +
     coord_flip() +
     theme_minimal() +
-    theme(legend.title = element_blank())
-  
+    theme(legend.position = "none")
+  }
+
 ggplotly(p)
 
 ```
 
-### Distance this month
+### Running Distance in `r format(today, "%B")`
 
 ```{r}
+
+# putting curly braces around the ggplot call
+# because this allows me to access df with .
+
+p <- run_table %>%
+  filter(Month == today_Month) %>%
+  group_by(Year) %>%
+  summarise(dist = sum(Distance)) %>% {
+  ggplot(., aes(x=Year, y=dist, color=Year)) +
+    geom_point(size=2, alpha=0.7, shape=21, stroke=2) +
+    geom_segment(aes(x=Year, xend=Year, y=0, yend=dist )) +
+    geom_text(aes(label=Year, x=Year, y=dist), nudge_y=10, nudge_x=0) +
+    scale_y_continuous(limits=c(0, max(.$dist) + 20)) +
+    ylab("Distance (km)") +
+    scale_color_manual(values = year_cols) +
+    coord_flip() +
+    theme_minimal() +
+    theme(legend.position = "none")
+  }
+
+ggplotly(p)
 
 ```
 
 
-Row {data-height=150}
+Row {data-height=200}
 -----------------------------------------------------------------------
 
-### All activities
+### All `r length(fit_table$Activity.Type)` activities from `r format(min(fit_table$Date), "%d %b %Y")` to `r format(max(fit_table$Date), "%d %b %Y")`
 
 ```{r dpi=300}
 
-plot_mapping <- function(fit_table) {
+plot_all <- function(fit_table, label_tab) {
 
   cols <- c("mRNA_reads" = "#7CAE00", "rRNA_LSU" = "#C77CFF", "rRNA_SSU" = "#00BFC4")
 
   p <- ggplot(fit_table, aes(x=Date, y=Distance, color=Activity.Type)) +
-    geom_point(alpha=0.75) +
+    geom_point(size=0.75, alpha=0.75) +
+    geom_text(data=label_tab, aes(label=label, x=Date, y=Distance), color="black", nudge_y=10) +
     ylab("Distance (km)") +
     xlab("Date") +
-    scale_x_datetime(labels = date_format("%b-%Y")) +
-    scale_y_continuous(labels = comma) +
+    
+    scale_x_datetime(labels = date_format("%b-%Y"), breaks=c(min(fit_table$Date), max(fit_table$Date)), date_breaks = "6 months") +
+    
+    scale_y_continuous(labels = comma, limits=c(0, max(fit_table$Distance) + 20)) +
     scale_color_manual(values = activity_cols) +
     #facet_wrap(~Activity.Type, ncol=1) +
-    theme_bw() +
+    theme_minimal() +
     theme(legend.title = element_blank())
 
   return(p)
 
 }
 
-act_tab <- subset(fit_table, Activity.Type!="Other")
 
-p <- plot_mapping(act_tab)
+# add annotations for paricular runs here!
+# note: these have to be entered in chronological order
+# otherwise the label variable below won't line up
+
+label_tab <- subset(fit_table, Day_Month_Year=="May-19-2018"  # great ocean road marathon
+                             | Day_Month_Year=="Nov-23-2019") # afterglow 2019
+
+label_tab["label"] <- c("GOR Marathon", "Afterglow 2019")
+
+p <- plot_all(fit_table, label_tab)
 
 ggplotly(p)
 
